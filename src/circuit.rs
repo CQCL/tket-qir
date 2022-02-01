@@ -143,6 +143,13 @@ pub enum OpBox {
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
+pub enum OpType {
+    H,
+    CX,
+    Measure,
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
 pub struct Conditional {
     op: Box<Operation>,
     width: u32,
@@ -152,7 +159,7 @@ pub struct Conditional {
 #[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
 pub struct Operation {
     #[serde(rename = "type")]
-    pub op_type: String,
+    pub op_type: OpType,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub n_qb: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
