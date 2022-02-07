@@ -1,7 +1,9 @@
+use std::collections::HashMap;
 
+use inkwell::values::{BasicValueEnum, PointerValue};
+use pyqir_generator::interop::Model;
 use serde::ser::Error as SerdeError;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-
 
 // Use a Patch enum to distinguish between a missing value and a null value.
 // https://stackoverflow.com/questions/44331037/how-can-i-distinguish-between-a-deserialized-field-that-is-missing-and-one-that/44332837#44332837
@@ -79,7 +81,6 @@ impl<T: Serialize> Serialize for Patch<T> {
 
 #[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
 pub struct Register(pub String, pub Vec<i64>);
-
 
 #[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
 pub struct CompositeGate {
@@ -181,10 +182,8 @@ pub struct Command {
     pub opgroup: Option<String>,
 }
 
-
 #[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
 pub struct Permutation(pub Register, pub Register);
-
 
 /// Pytket canonical circuit
 #[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
@@ -197,4 +196,39 @@ pub struct Circuit {
     pub qubits: Vec<Register>,
     pub bits: Vec<Register>,
     pub implicit_permutation: Vec<Permutation>,
+}
+
+impl Model for Circuit {
+    fn name(&self) -> String {
+        self.name.clone().unwrap_or("tket_circuit".to_string())
+    }
+
+    fn number_of_registers(&self) -> usize {
+        todo!()
+    }
+
+    fn registers(&self) -> &Vec<pyqir_generator::interop::ClassicalRegister> {
+        todo!()
+    }
+
+    fn qubits(&self) -> &Vec<pyqir_generator::interop::QuantumRegister> {
+        todo!()
+    }
+
+    fn static_alloc(&self) -> bool {
+        true
+    }
+
+    fn initialize_registers(&self) -> bool {
+        false
+    }
+
+    fn write_instructions<'ctx>(
+        &self,
+        generator: &qirlib::codegen::CodeGenerator<'ctx>,
+        qubits: &HashMap<String, BasicValueEnum<'ctx>>,
+        registers: &mut HashMap<String, Option<PointerValue<'ctx>>>,
+    ) {
+        todo!()
+    }
 }

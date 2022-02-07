@@ -1,8 +1,5 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
-
-use super::array1d;
-use super::basic_values;
 use crate::circuit::Register;
 use crate::circuit::{Circuit, Command, OpType};
 use inkwell::values::{BasicMetadataValueEnum, BasicValue, BasicValueEnum};
@@ -64,6 +61,7 @@ pub fn populate_context<'a>(
     build_entry_function(&generator, circ)?;
     Ok(generator)
 }
+
 
 fn build_entry_function(generator: &CodeGenerator<'_>, circ: &Circuit) -> Result<(), String> {
     let entrypoint = get_entry_function(&generator.module);
