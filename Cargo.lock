@@ -362,7 +362,7 @@ dependencies = [
 
 [[package]]
 name = "pyqir-generator"
-version = "0.1.1-alpha"
+version = "0.2.0-alpha"
 dependencies = [
  "env_logger",
  "inkwell",
@@ -373,7 +373,7 @@ dependencies = [
 
 [[package]]
 name = "qirlib"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "base64",
  "cty",
