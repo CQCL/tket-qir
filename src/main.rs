@@ -31,6 +31,7 @@ use qirlib::module::load_file;
 
 use either::Either;
 
+use crate::circuit::OpType;
 use crate::circuit::Register;
 
 use std::fs::{File, OpenOptions};
@@ -83,10 +84,45 @@ fn match_operand(operand: &Operand) -> Option<&llvm_ir::constant::ConstantRef> {
 // fn match_globalref()
 
 
-fn to_command(instruction: &Instruction) {
-    if let Instruction::Call(call) = instruction {
-	println!("{}", call);
+fn match_to_optype(qir_optype: &str) -> Option<OpType> {
+
+    match qir_optype {
+	"h" => Some(OpType::H),
+	"cnot" => Some(OpType::CX),
+	"mz" => Some(OpType::Measure),
+	_ => None,
     }
+
+}
+
+fn to_command(instruction: &Instruction) {
+    let mut func_signature = String::new();
+    if let Instruction::Call(call) = instruction {
+	// println!("{}", call);
+	if let Either::Right(operand) = &call.function {
+	    // println!("{}", operand);
+	    func_signature = operand.to_string();
+	}
+    }
+
+    let split_signature: Vec<&str> = func_signature.split("__").collect();
+    // println!("{:?}", split_signature);
+
+    let optype = match_to_optype(split_signature[3]).unwrap();
+
+    println!("{:?}", optype);
+
+    let mut args = String::new();
+    if let Instruction::Call(call) = instruction {
+	// println!("{}", call);
+	let arguments = &call.arguments;
+	if let Operand::ConstantOperand(operand) = &arguments[0].0 {
+	    // println!("{}", operand);
+	    args = operand.to_string();
+	}
+    }
+
+    println!("{:?}", args)
 }
 
 fn main() {
@@ -104,15 +140,15 @@ fn main() {
 
     let instructions = &first_basicblock.instrs;
 
-    println!("{:?}", instructions[0]);
+    println!("{:?}", instructions[1]);
 
     to_command(&instructions[0]);
 
     
-    let first_instruction = &first_basicblock.instrs[1];
-    let call = match_call(first_instruction);
+    // let first_instruction = &first_basicblock.instrs[1];
+    // let call = match_call(first_instruction);
     
-    println!("{:?}", call.unwrap());
+    // println!("{:?}", call.unwrap());
     // let call_function = &call.unwrap().function;
     // println!("{:?}", call_function);
 
