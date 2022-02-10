@@ -31,6 +31,11 @@ use qirlib::module::load_file;
 
 use either::Either;
 
+use crate::circuit::Register;
+
+use std::fs::{File, OpenOptions};
+
+use std::io::Write;
 
 
 // struct InnerFunctionValue<'a>(FunctionValue<'a>);
@@ -77,103 +82,101 @@ fn match_operand(operand: &Operand) -> Option<&llvm_ir::constant::ConstantRef> {
 
 // fn match_globalref()
 
+
+fn to_command(instruction: &Instruction) {
+    if let Instruction::Call(call) = instruction {
+	println!("{}", call);
+    }
+}
+
 fn main() {
     let circ_s = r#"{"bits": [["c", [0]], ["c", [1]]], "commands": [{"args": [["q", [0]]], "op": {"type": "H"}}, {"args": [["q", [0]], ["q", [1]]], "op": {"type": "CX"}}, {"args": [["q", [0]], ["c", [0]]], "op": {"type": "Measure"}}, {"args": [["q", [1]], ["c", [1]]], "op": {"type": "Measure"}}], "implicit_permutation": [[["q", [0]], ["q", [0]]], [["q", [1]], ["q", [1]]]], "phase": "0.0", "qubits": [["q", [0]], ["q", [1]]]}"#;
     let p: circuit::Circuit = serde_json::from_str(circ_s).unwrap();
 
     // dbg!(p);
-
-
     // println!("{:?}", module.functions)
-
     // write_circ_to_file(&p, "dump.ll");
     // dbg!(get_ir_string(&p));
 
-    
     let module = Module::from_bc_path("./example_files/SimpleGroverBaseProfile.bc").unwrap();
     let first_function = &module.functions[0];
     let first_basicblock = &first_function.basic_blocks[0];
-    let first_instruction = &first_basicblock.instrs[0];
-    // let function_call = &first_instruction;
-    // match first_instruction {
-    // 	Instruction::Call(call) => println!("{:?}", call),
-    // 	_ => (),
-    // }
-    // println!("{:?}", first_instruction);
+
+    let instructions = &first_basicblock.instrs;
+
+    println!("{:?}", instructions[0]);
+
+    to_command(&instructions[0]);
+
+    
+    let first_instruction = &first_basicblock.instrs[1];
     let call = match_call(first_instruction);
+    
     println!("{:?}", call.unwrap());
-    let call_function = &call.unwrap().function;
-    println!("{:?}", call_function);
+    // let call_function = &call.unwrap().function;
+    // println!("{:?}", call_function);
 
-    let operand = match_function(call_function).unwrap();
-    let const_ref = match_operand(operand).unwrap();
-    let global_ref = &*const_ref.as_ref().to_string();
-    // println!("{:?}", global_ref);
-    // println!("{:?}", global_ref.to_string());
+    // let operand = match_function(call_function).unwrap();
+    // let const_ref = match_operand(operand).unwrap();
+    // let global_ref = &*const_ref.as_ref().to_string();
+    // // println!("{:?}", global_ref);
+    // // println!("{:?}", global_ref.to_string());
     
-    let op: Vec<&str> = global_ref.split("__").collect();
-    print!("{:?}", op[3]);
-
+    // let op: Vec<&str> = global_ref.split("__").collect();
+    // print!("{:?}", op[3]);
     
-    let params = &call.unwrap().arguments;
-    println!("{:?}", params[0].0);
+    // let params = &call.unwrap().arguments;
+    // println!("{:?}", params[0].0);
 
-    let param_const_ref = match_operand(&params[0].0).unwrap();
+    // let param_const_ref = match_operand(&params[0].0).unwrap();
 
-    println!("{}", param_const_ref);
+    // println!("{}", param_const_ref);
 
 
-    let stuff: &str = &*param_const_ref.to_string();
+    // let stuff: &str = &*param_const_ref.to_string();
 
-    println!("{}", stuff);
+    // println!("{}", stuff);
     
-    if stuff.contains("Qubit") {
-	println!("Qubit!");
-    }
-
-    if stuff.contains("null") {
-	println!("null !")
-    }
-
-    /* println!("{:?}", global_ref) */
-    // let global_ref = match_constref(const_ref);
-
-    // let module = Module::from_bc_path("./dump.bc").unwrap();
-   
-    // let path = Path::new("./example_files/SimpleGroverBaseProfile.bc");
-    // let context: Context = Context::create();
-    // // let module = module::load_template("./example_files/SimpleGroverBaseProfile.bc", &context).unwrap();
-    // let module = load_file(&path, &context).unwrap();
-    // // let first_func = module.get_first_function();
-    // // println!("{:?}", first_func);
-    // // let module = parse_file("./example_files/SimpleGroverBaseProfile.bc").unwrap();
-    // // let struct_names = module.types.all_struct_names();
-    // // for names in struct_names {
-    // // 	println!("{}", names);
-    // // }
-    // let generator = CodeGenerator::new(&context, module).unwrap();
-    // let module = generator.module;
-    // // println!("{:?}", module.get_first_function().unwrap());
-    // let first_function = module.get_first_function().unwrap();
-    // // println!("{:?}", first_function);
-    // let first_basicblock = first_function.get_first_basic_block().unwrap();
-    // // println!("{:?}", first_basicblock);
-    // let first_instruction = first_basicblock.get_first_instruction().unwrap();
-    // let num_operands = first_instruction.get_num_operands();
-    // println!("{:?}", num_operands);
-    // for operand in 0..num_operands {
-    // 	println!("{:?}", first_instruction.get_operand(operand));
+    // if stuff.contains("Qubit") {
+    // 	println!("Qubit!");
     // }
-    // let next_instruction = first_instruction.get_next_instruction().unwrap();
-    // println!("{:?}", next_instruction)
+
+    // if stuff.contains("null") {
+    // 	println!("null !")
+    // }
+
+    // let register = circuit::Register("q".to_string(), vec![0]);
+    // let register1 = register.clone();
+    // let register2 = register.clone();
+    // let circuit_qubits = vec![register];
+    // println!("{:?}", circuit_qubits);
+    // let circuit_bits: Vec<Register> = vec![];
+
+
+    // let optype = circuit::OpType::H;
+    // let op_register = circuit::Register("q".to_string(), vec![0]);
+    // let op_args = vec![op_register];
+    // let op = circuit::Operation{op_type: optype, n_qb: None, params: None, op_box: None, signature: None, conditional: None};
+    // let command = circuit::Command{op: op, args: op_args, opgroup: None};
+    // let commands = vec![command];
+
+    // let phase = "0.0".to_string();
     
-    // inner_functionvalue = InnerFunctionValue(module.get_first_fun/* c */tion().unwrap())
-    // println!("{:?}",first_function.get_next_function().unwrap());
-    // let intrinsics = Intrinsics::new(&module);
-    // println!("{:?}", intrinsics.h_ins);
-    // let intrinsics = Intrinsics::new(&generator.module);
-    // println!("{:?}", intrinsics.h);
-    // let types = Types::new(generator.context, &generator.module);
-    // println!("{}", types.qubit.size_of())
+    // let implicit_permutation = vec![circuit::Permutation(register1, register2)];
+    
+    // let c = circuit::Circuit{
+    // 	name: None,
+    // 	phase: phase,
+    // 	commands: commands,
+    // 	qubits: circuit_qubits,
+    // 	bits: circuit_bits,
+    // 	implicit_permutation: implicit_permutation
+    // };
+
+
+    // let c_json = serde_json::to_string(&c);
+    // println!("{:?}", c_json.unwrap());
+
+    // serde_json::to_writer(&File::create("./data.json").unwrap(), &c);
    
 }
