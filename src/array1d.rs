@@ -29,7 +29,7 @@ pub(crate) fn emit_array_1d<'ctx>(
         let zero = generator
             .builder
             .build_call(
-                generator.runtime_library.result_get_zero,
+                generator.runtime_library.result_get_zero.unwrap(),
                 &[],
                 format!("zero_{}", index).as_str(),
             )
@@ -38,7 +38,7 @@ pub(crate) fn emit_array_1d<'ctx>(
             .unwrap();
         let one = u64_to_i32(generator, 1);
         generator.builder.build_call(
-            generator.runtime_library.result_update_reference_count,
+            generator.runtime_library.result_update_reference_count.unwrap(),
             &[zero.into(), one],
             name,
         );
@@ -65,7 +65,7 @@ fn get_bitcast_array_pointer_element<'ctx>(
     );
 
     let element_result_ptr_name = format!("{}_result_{}", sub_result_name, index);
-    let target_type = generator.types.array.ptr_type(AddressSpace::Generic);
+    let target_type = generator.types.array.unwrap().ptr_type(AddressSpace::Generic);
     let cast = generator.builder.build_bitcast(
         sub_result_element_ptr,
         target_type,
@@ -141,7 +141,7 @@ pub(crate) fn emit_array_allocate1d<'ctx>(
     ];
     emit_call_with_return(
         generator,
-        generator.runtime_library.array_create_1d,
+        generator.runtime_library.array_create_1d.unwrap(),
         args,
         result_name,
     )
@@ -157,7 +157,7 @@ pub(crate) fn emit_array_get_element_ptr_1d<'ctx>(
     let value = generator
         .builder
         .build_call(
-            generator.runtime_library.array_get_element_ptr_1d,
+            generator.runtime_library.array_get_element_ptr_1d.unwrap(),
             args,
             result_name,
         )

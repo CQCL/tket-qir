@@ -181,7 +181,7 @@ pub(crate) fn emit_allocate<'ctx>(
     let args = [];
     emit_call_with_return(
         generator,
-        generator.runtime_library.qubit_allocate,
+        generator.runtime_library.qubit_allocate.unwrap(),
         &args,
         result_name,
     )
@@ -189,7 +189,7 @@ pub(crate) fn emit_allocate<'ctx>(
 
 pub(crate) fn emit_release<'ctx>(generator: &CodeGenerator<'ctx>, qubit: &BasicValueEnum<'ctx>) {
     let args = [qubit.as_basic_value_enum().into()];
-    emit_void_call(generator, generator.runtime_library.qubit_release, &args);
+    emit_void_call(generator, generator.runtime_library.qubit_release.unwrap(), &args);
 }
 
 pub(crate) fn emit_void_call<'ctx>(
@@ -283,7 +283,7 @@ fn measure<'ctx>(
     );
     let minus_one = basic_values::i64_to_i32(generator, -1);
     generator.builder.build_call(
-        generator.runtime_library.result_update_reference_count,
+        generator.runtime_library.result_update_reference_count.unwrap(),
         &[existing_value.into(), minus_one],
         "",
     );
@@ -291,7 +291,7 @@ fn measure<'ctx>(
     // increase the ref count of the new value and store it in the target register
     let one = basic_values::i64_to_i32(generator, 1);
     generator.builder.build_call(
-        generator.runtime_library.result_update_reference_count,
+        generator.runtime_library.result_update_reference_count.unwrap(),
         &[result.into(), one],
         "",
     );
@@ -309,7 +309,7 @@ fn controlled<'ctx>(
     emit_void_call(generator, intrinsic, &[control.into(), qubit.into()]);
     let minus_one = basic_values::i64_to_i32(generator, -1);
     generator.builder.build_call(
-        generator.runtime_library.array_update_reference_count,
+        generator.runtime_library.array_update_reference_count.unwrap(),
         &[control.into(), minus_one],
         "",
     );
