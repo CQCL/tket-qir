@@ -122,7 +122,7 @@ fn to_command(instruction: &Instruction) {
 	}
     }
 
-    println!("{:?}", args)
+    println!("{:?}", args);
 }
 
 fn main() {
@@ -181,38 +181,5 @@ fn main() {
     // 	println!("null !")
     // }
 
-    // let register = circuit::Register("q".to_string(), vec![0]);
-    // let register1 = register.clone();
-    // let register2 = register.clone();
-    // let circuit_qubits = vec![register];
-    // println!("{:?}", circuit_qubits);
-    // let circuit_bits: Vec<Register> = vec![];
-
-
-    // let optype = circuit::OpType::H;
-    // let op_register = circuit::Register("q".to_string(), vec![0]);
-    // let op_args = vec![op_register];
-    // let op = circuit::Operation{op_type: optype, n_qb: None, params: None, op_box: None, signature: None, conditional: None};
-    // let command = circuit::Command{op: op, args: op_args, opgroup: None};
-    // let commands = vec![command];
-
-    // let phase = "0.0".to_string();
-    
-    // let implicit_permutation = vec![circuit::Permutation(register1, register2)];
-    
-    // let c = circuit::Circuit{
-    // 	name: None,
-    // 	phase: phase,
-    // 	commands: commands,
-    // 	qubits: circuit_qubits,
-    // 	bits: circuit_bits,
-    // 	implicit_permutation: implicit_permutation
-    // };
-
-
-    // let c_json = serde_json::to_string(&c);
-    // println!("{:?}", c_json.unwrap());
-
-    // serde_json::to_writer(&File::create("./data.json").unwrap(), &c);
    
 }
