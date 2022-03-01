@@ -7,7 +7,8 @@ edition = "2018"
 
 [dependencies]
 
-llvm-ir = { version = "0.8.1", features = ["llvm-13"] }
+either = "1.6.1"
+llvm-ir = { version = "0.8.1", features = ["llvm-11"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 uuid = { version = "0.8", features = ["serde"] }
