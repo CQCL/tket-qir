@@ -1,7 +1,5 @@
-
 use serde::ser::Error as SerdeError;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-
 
 // Use a Patch enum to distinguish between a missing value and a null value.
 // https://stackoverflow.com/questions/44331037/how-can-i-distinguish-between-a-deserialized-field-that-is-missing-and-one-that/44332837#44332837
@@ -78,8 +76,7 @@ impl<T: Serialize> Serialize for Patch<T> {
 /// Pytket specific models
 
 #[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
-pub struct Register(pub String, pub Vec<i64>);
-
+pub struct Register(pub String, pub Vec<u64>);
 
 #[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
 pub struct CompositeGate {
@@ -90,7 +87,7 @@ pub struct CompositeGate {
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
-pub struct BoxID(uuid::Uuid);
+pub struct BoxID(pub uuid::Uuid);
 
 /// Box for an operation, the enum variant names come from the names
 /// of the C++ operations and are renamed if the string corresponding
@@ -143,16 +140,31 @@ pub enum OpBox {
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
+pub enum OpType {
+    H,
+    CX,
+    Measure,
+    X,
+    Y,
+    Z,
+    Rx,
+    Ry,
+    Rz,
+    Conditional,
+    CircBox,
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
 pub struct Conditional {
-    op: Box<Operation>,
-    width: u32,
-    value: u32,
+    pub op: Box<Operation>,
+    pub width: u32,
+    pub value: u32,
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
 pub struct Operation {
     #[serde(rename = "type")]
-    pub op_type: String,
+    pub op_type: OpType,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub n_qb: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -174,10 +186,8 @@ pub struct Command {
     pub opgroup: Option<String>,
 }
 
-
 #[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
 pub struct Permutation(pub Register, pub Register);
-
 
 /// Pytket canonical circuit
 #[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
