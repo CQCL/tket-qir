@@ -102,9 +102,24 @@ impl FunctionExtension for llvm_ir::Function {
     
 }
 
+pub trait InstructionExtension {
+    fn get_call(&self) -> &llvm_ir::instruction::Call;
+}
+
+impl InstructionExtension for llvm_ir::Instruction {
+    fn get_call(&self) -> &llvm_ir::instruction::Call {
+	match &self {
+	    llvm_ir::Instruction::Call(call) => call,
+	    _ => unreachable!(),
+	}
+    }
+}
+
+
 pub trait CallExtension {
     fn get_func_name(&self) -> Option<llvm_ir::Name>;
-    fn get_qubit_index(&self) -> Option<&u64>;
+    fn get_qubit_index(&self) -> &u64;
+    fn get_optype(&self) -> Option<OpType>;
 }
 
 impl CallExtension for llvm_ir::instruction::Call {
@@ -118,7 +133,7 @@ impl CallExtension for llvm_ir::instruction::Call {
             _ => None,
         }
     }
-    fn get_qubit_index(&self) -> Option<&u64> {
+    fn get_qubit_index(&self) -> &u64 {
 	match self.arguments.as_slice() {
 	    [first, ..] => {
 		match &first.0 {
@@ -126,20 +141,34 @@ impl CallExtension for llvm_ir::instruction::Call {
 			match const_op.as_ref() {
 			    llvm_ir::constant::Constant::IntToPtr (p) => {
 				match p.operand.as_ref() {
-				    llvm_ir::Constant::Int { bits: _, value } => Some(&value),
-				    _ => None,
+				    llvm_ir::Constant::Int { bits: _, value } => &value,
+				    _ => &0,
 				    
 				}
 			    },
-			    _ => None,
+			    _ => &0,
 			}
 		    },
-		    _ => None,
+		    _ => &0,
 		}
 	    },
 	    _ => unreachable!(),
         }
     }
+    fn get_optype(&self) -> Option<OpType> {
+	let func_name = self.get_func_name().expect("No name found.");
+	if func_name.as_string().contains("__h__") {
+	   Some(OpType::H)
+	}
+	else if func_name.as_string().contains("__cnot__") {
+	    Some(OpType::CX)
+	}
+	else {
+	    None
+	}
+    }
+
+    
 }
 
 pub trait NameExtension {
@@ -245,6 +274,7 @@ mod tests {
     use llvm_ir::Module;
     use llvm_ir::instruction::Instruction;
     use llvm_ir::types::Typed;
+    use serde_json::to_vec_pretty;
     
 
     use crate::circuit;
@@ -307,7 +337,7 @@ mod tests {
 	match first_instruction {
 	    llvm_ir::Instruction::Call(call) => {
 		let index = call.get_qubit_index();
-		assert!(index.is_none())
+		assert_eq!(*index, 0)
 	    },
 	    _ => (),
 	}
@@ -317,12 +347,130 @@ mod tests {
 
 	match second_instruction {
 	    llvm_ir::Instruction::Call(call) => {
-		let index = call.get_qubit_index().expect("Index not found.");
+		let index = call.get_qubit_index();
 		assert_eq!(*index, 2);
 	    },
 	    _ => (),
 	}
 	
+    }
+
+    #[test]
+    fn test_get_optype() {
+	
+	let file_path = Path::new("example_files/SimpleGroverBaseProfile.bc");
+	let module = Module::from_bc_path(file_path).expect("File not found.");
+
+	let func_name = "Microsoft__Quantum__Samples__SimpleGrover__SearchForMarkedInput__Interop";
+	let func = module.get_func_by_name(func_name).expect("Function not found.");
+
+	let first_instruction = &func.basic_blocks[0].instrs[0];
+
+	// println!("{:?}", first_instruction);
+
+	match first_instruction {
+	    llvm_ir::Instruction::Call(call) => {
+		match call.get_optype() {
+		    Some(optype) => {
+			assert_eq!(optype, OpType::H)
+		    },
+		    _ => (),
+		}
+		
+		// assert_eq!(call.get_in_name().expect("Call not found").as_string(), func_name);
+	    },
+	    _ => (),
+	}	
+
+    }
+
+    #[test]
+    fn test_generate_circuit_from_single_expression() {
+	
+	let file_path = Path::new("example_files/SimpleGroverBaseProfile.bc");
+	let module = Module::from_bc_path(file_path).expect("File not found.");
+
+	let func_name = "Microsoft__Quantum__Samples__SimpleGrover__SearchForMarkedInput__Interop";
+	let func = module.get_func_by_name(func_name).expect("Function not found.");
+
+	let first_instruction = &func.basic_blocks[0].instrs[0];
+
+	// println!("{:?}", first_instruction);
+
+	// let optype: OpType;
+	// let qubit_index: Option<&u64>;
+
+	let call_inst = first_instruction.get_call();
+
+	let optype = call_inst.get_optype().expect("Optype not found.");
+	let qubit_index = call_inst.get_qubit_index();
+	
+	// match first_instruction {
+	//     llvm_ir::Instruction::Call(call) => call_instr = call,
+	//     // Assert_eq!(call.get_in_name().expect("Call not found").as_string(), func_name);
+	//     _ => unreachable!(),
+	// }
+	
+	println!("{:?}", optype);
+	println!("{:?}", *qubit_index);
+	
+	// optype = call.get_optype().expect("No optype found.");
+	// qubit_index = call.get_qubit_index();
+	
+	// A register of qubits for the circuit
+	let register = circuit::Register("q".to_string(), vec![0]);
+
+	// Two clones for the implicit permutation
+	let register1 = register.clone();
+	let register2 = register.clone();
+
+	// Filling out the qubit register while creating an empty bit register
+	let circuit_qubits = vec![register];
+	let circuit_bits: Vec<circuit::Register> = vec![];
+
+	// Filling out the op type for simple H gate 
+	// let optype = circuit::OpType::H;
+	let op_register = circuit::Register("q".to_string(), vec![*qubit_index as i64]);
+	let op_args = vec![op_register];
+	let op = circuit::Operation{
+	    op_type: optype,
+	    n_qb: None,
+	    params: None,
+	    op_box: None,
+	    signature: None,
+	    conditional: None
+	};
+
+	// Filling out the commands
+	let command = circuit::Command{op: op, args: op_args, opgroup: None};
+	let commands = vec![command];
+
+	// Defining the global phase and implicit permutation
+	let phase = "0.0".to_string();
+	let implicit_permutation = vec![circuit::Permutation(register1, register2)];
+
+	// Creating the circuit with all previously defined parameters
+	let circuit = circuit::Circuit{
+	    name: None,
+	    phase: phase,
+	    commands: commands,
+	    qubits: circuit_qubits,
+	    bits: circuit_bits,
+	    implicit_permutation: implicit_permutation
+	};
+
+
+	let circuit_json_str = serde_json::to_string(&circuit).unwrap();
+	// println!("{:?}", c_json.unwrap());
+
+	let file_path = Path::new("example_files/simple_H_pytket_circuit.json");
+	let file = File::open(file_path).expect("File not found.");
+	let reader = BufReader::new(file);
+	let pytket_circuit: circuit::Circuit = serde_json::from_reader(reader).expect("Error while reading.");
+	// serde_json::to_writer(&File::create("./data.json").unwrap(), &c);
+	let pytket_circuit_str: String = serde_json::to_string(&pytket_circuit).unwrap();
+
+	assert_eq!(circuit_json_str, pytket_circuit_str);
     }
     
     
