@@ -230,8 +230,17 @@ impl CallExtension for llvm_ir::instruction::Call {
     fn to_command(&self) -> Option<Command> {
 	let op = self.get_operation().expect("Op not found.");
 	let qubit_index = self.get_qubit_index();
-	let op_register = Register("q".to_string(), vec![*qubit_index as i64]);
-	let op_args = vec![op_register];
+	// let op_register = Register("q".to_string(), qubit_index);
+	// let op_args = vec![op_register];
+
+	let op_args: Vec<Register> = qubit_index
+	    .iter()
+	    .map(|qi| Register("q".to_string(), vec![*qi]))
+	    .collect();
+
+
+
+	
 	// Filling out the commands
 	let command = Command{op: op, args: op_args, opgroup: None};
 	return Some(command);
@@ -405,21 +414,26 @@ mod tests {
 	match first_instruction {
 	    llvm_ir::Instruction::Call(call) => {
 		let index = call.get_qubit_index();
-		assert_eq!(*index, 0)
+		assert_eq!(index, vec![0])
 	    },
 	    _ => (),
 	}
 
 	let second_instruction_name = "__quantum__qis__x__body";
-	let second_instruction = func.get_instr_by_name(second_instruction_name).expect("Instruction not ofund.");
+	let second_instruction = func.get_instr_by_name(second_instruction_name).expect("Instruction not found.");
 
 	match second_instruction {
 	    llvm_ir::Instruction::Call(call) => {
 		let index = call.get_qubit_index();
-		assert_eq!(*index, 2);
+		assert_eq!(index, vec![2]);
 	    },
 	    _ => (),
 	}
+
+	let third_instruction_name = "__quantum__qis__cnot__body";
+	let third_instruction_call = func.get_instr_by_name(third_instruction_name).expect("Instruction not found.").get_call();
+
+	println!("{:?}", third_instruction_call.get_qubit_index())
 	
     }
 
@@ -589,7 +603,7 @@ mod tests {
 	// }
 	
 	println!("{:?}", optype);
-	println!("{:?}", *qubit_index);
+	println!("{:?}", qubit_index);
 	
 	// optype = call.get_optype().expect("No optype found.");
 	// qubit_index = call.get_qubit_index();
@@ -607,7 +621,7 @@ mod tests {
 
 	// Filling out the op type for simple H gate 
 	// let optype = circuit::OpType::H;
-	let op_register = circuit::Register("q".to_string(), vec![*qubit_index as i64]);
+	let op_register = circuit::Register("q".to_string(), qubit_index);
 	let op_args = vec![op_register];
 	let op = circuit::Operation{
 	    op_type: optype,
