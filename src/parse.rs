@@ -118,7 +118,7 @@ impl InstructionExtension for llvm_ir::Instruction {
 
 pub trait CallExtension {
     fn get_func_name(&self) -> Option<llvm_ir::Name>;
-    fn get_qubit_index(&self) -> &u64;
+    fn get_qubit_index(&self) -> Vec<i64>;
     fn get_optype(&self) -> Option<OpType>;
     fn get_operation(&self) -> Option<Operation>;
     fn to_command(&self) -> Option<Command>;
@@ -135,26 +135,50 @@ impl CallExtension for llvm_ir::instruction::Call {
             _ => None,
         }
     }
-    fn get_qubit_index(&self) -> &u64 {
-	match self.arguments.as_slice() {
-	    [first, ..] => {
-		match &first.0 {
-		    llvm_ir::Operand::ConstantOperand(const_op) => {
-			match const_op.as_ref() {
-			    llvm_ir::constant::Constant::IntToPtr (p) => {
-				match p.operand.as_ref() {
-				    llvm_ir::Constant::Int { bits: _, value } => &value,
-				    _ => &0,
-				}
-			    },
-			    _ => &0,
-			}
-		    },
-		    _ => &0,
-		}
-	    },
-	    _ => unreachable!(),
-        }
+    fn get_qubit_index(&self) -> Vec<i64> {
+	println!("{:?}", self.arguments);
+
+	let qubit_indices: Vec<i64> = self.arguments
+	    .iter()
+	    .map(|arg| match &arg.0 {
+		llvm_ir::Operand::ConstantOperand(const_op) => {
+		    match const_op.as_ref() {
+			llvm_ir::constant::Constant::IntToPtr (p) => {
+			    match p.operand.as_ref() {
+				llvm_ir::Constant::Int { bits: _, value } => *value as i64,
+				_ => 0,
+			    }
+			},
+			_ => 0,
+		    }
+		},
+		_ => 0,
+	    })
+	    .collect();
+	// println!("{:?}", qubit_indices);
+
+	
+	// match self.arguments.as_slice() {
+	//     [first, ..] => {
+	// 	// println!("{:?}", first);
+	// 	match &first.0 {
+	// 	    llvm_ir::Operand::ConstantOperand(const_op) => {
+	// 		match const_op.as_ref() {
+	// 		    llvm_ir::constant::Constant::IntToPtr (p) => {
+	// 			match p.operand.as_ref() {
+	// 			    llvm_ir::Constant::Int { bits: _, value } => &value,
+	// 			    _ => &0,
+	// 			}
+	// 		    },
+	// 		    _ => &0,
+	// 		}
+	// 	    },
+	// 	    _ => &0,
+	// 	}
+	//     },
+	//     _ => unreachable!(),
+        // }
+	return qubit_indices
     }
     fn get_optype(&self) -> Option<OpType> {
 	let func_name = self.get_func_name().expect("No name found.").as_string();
