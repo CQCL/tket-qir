@@ -229,67 +229,67 @@ impl NameExtension for llvm_ir::Name {
 }
 
 
-fn match_call(instruction: &Instruction) -> Option<&llvm_ir::instruction::Call> {
-    match instruction {
-	Instruction::Call(call) => Some(call),
-	_ => None,
-    }
-}
+// fn match_call(instruction: &Instruction) -> Option<&llvm_ir::instruction::Call> {
+//     match instruction {
+// 	Instruction::Call(call) => Some(call),
+// 	_ => None,
+//     }
+// }
 
-fn match_function(func: &Either<InlineAssembly, Operand>) -> Option<&llvm_ir::operand::Operand> {
-    match func {
-	Either::Right(operand) => Some(operand),
-	_ => None,
-    }
-}
+// fn match_function(func: &Either<InlineAssembly, Operand>) -> Option<&llvm_ir::operand::Operand> {
+//     match func {
+// 	Either::Right(operand) => Some(operand),
+// 	_ => None,
+//     }
+// }
 
-fn match_operand(operand: &Operand) -> Option<&llvm_ir::constant::ConstantRef> {
-    match operand {
-	Operand::ConstantOperand(const_ref) => Some(const_ref),
-	_ => None,
-    }
-}
+// fn match_operand(operand: &Operand) -> Option<&llvm_ir::constant::ConstantRef> {
+//     match operand {
+// 	Operand::ConstantOperand(const_ref) => Some(const_ref),
+// 	_ => None,
+//     }
+// }
 
-fn match_to_optype(qir_optype: &str) -> Option<OpType> {
+// fn match_to_optype(qir_optype: &str) -> Option<OpType> {
 
-    match qir_optype {
-	"h" => Some(OpType::H),
-	"cnot" => Some(OpType::CX),
-	"mz" => Some(OpType::Measure),
-	_ => None,
-    }
+//     match qir_optype {
+// 	"h" => Some(OpType::H),
+// 	"cnot" => Some(OpType::CX),
+// 	"mz" => Some(OpType::Measure),
+// 	_ => None,
+//     }
 
-}
+// }
 
-fn to_command(instruction: &Instruction) {
-    let mut func_signature = String::new();
-    if let Instruction::Call(call) = instruction {
-	// println!("{}", call);
-	if let Either::Right(operand) = &call.function {
-	    // println!("{}", operand);
-	    func_signature = operand.to_string();
-	}
-    }
+// fn to_command(instruction: &Instruction) {
+//     let mut func_signature = String::new();
+//     if let Instruction::Call(call) = instruction {
+// 	// println!("{}", call);
+// 	if let Either::Right(operand) = &call.function {
+// 	    // println!("{}", operand);
+// 	    func_signature = operand.to_string();
+// 	}
+//     }
 
-    let split_signature: Vec<&str> = func_signature.split("__").collect();
-    // println!("{:?}", split_signature);
+//     let split_signature: Vec<&str> = func_signature.split("__").collect();
+//     // println!("{:?}", split_signature);
 
-    let optype = match_to_optype(split_signature[3]).unwrap();
+//     let optype = match_to_optype(split_signature[3]).unwrap();
 
-    println!("{:?}", optype);
+//     println!("{:?}", optype);
 
-    let mut args = String::new();
-    if let Instruction::Call(call) = instruction {
-	// println!("{}", call);
-	let arguments = &call.arguments;
-	if let Operand::ConstantOperand(operand) = &arguments[0].0 {
-	    // println!("{}", operand);
-	    args = operand.to_string();
-	}
-    }
+//     let mut args = String::new();
+//     if let Instruction::Call(call) = instruction {
+// 	// println!("{}", call);
+// 	let arguments = &call.arguments;
+// 	if let Operand::ConstantOperand(operand) = &arguments[0].0 {
+// 	    // println!("{}", operand);
+// 	    args = operand.to_string();
+// 	}
+//     }
 
-    println!("{:?}", args);
-}
+//     println!("{:?}", args);
+// }
 
 
 // pub fn parse_bitcode_file(file_path: &Path) -> Result<Module, String> {
