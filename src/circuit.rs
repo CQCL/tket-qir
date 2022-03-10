@@ -145,6 +145,11 @@ pub enum OpBox {
 #[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
 pub enum OpType {
     H,
+    X,
+    Y,
+    Z,
+    T,
+    Tdg,
     CX,
     Measure,
 }
