@@ -120,6 +120,8 @@ pub trait CallExtension {
     fn get_func_name(&self) -> Option<llvm_ir::Name>;
     fn get_qubit_index(&self) -> &u64;
     fn get_optype(&self) -> Option<OpType>;
+    fn get_operation(&self) -> Option<Operation>;
+    fn to_command(&self) -> Option<Command>;
 }
 
 impl CallExtension for llvm_ir::instruction::Call {
@@ -143,7 +145,6 @@ impl CallExtension for llvm_ir::instruction::Call {
 				match p.operand.as_ref() {
 				    llvm_ir::Constant::Int { bits: _, value } => &value,
 				    _ => &0,
-				    
 				}
 			    },
 			    _ => &0,
@@ -156,19 +157,62 @@ impl CallExtension for llvm_ir::instruction::Call {
         }
     }
     fn get_optype(&self) -> Option<OpType> {
-	let func_name = self.get_func_name().expect("No name found.");
-	if func_name.as_string().contains("__h__") {
+	let func_name = self.get_func_name().expect("No name found.").as_string();
+	if func_name.contains("__h__") {
 	   Some(OpType::H)
 	}
-	else if func_name.as_string().contains("__cnot__") {
+	else if func_name.contains("__x__") {
+	    Some(OpType::X)
+	}
+	else if func_name.contains("__y__") {
+	    Some(OpType::Y)
+	}
+	else if func_name.contains("__z__") {
+	    Some(OpType::Z)
+	}
+	else if func_name.contains("__t__body") {
+	    Some(OpType::T)
+	}
+	else if func_name.contains("__t__adj") {
+	    Some(OpType::Tdg)
+	}
+	else if func_name.contains("__cnot__") {
 	    Some(OpType::CX)
+	}
+	else if func_name.contains("__mz__") {
+	    Some(OpType::Measure)
 	}
 	else {
 	    None
 	}
     }
-
-    
+    fn get_operation(&self) -> Option<Operation> {
+	let op_type = self.get_optype();
+	match op_type {
+	    Some(optype) => {
+		let op = Operation{
+		    op_type: optype,
+		    n_qb: None,
+		    params: None,
+		    op_box: None,
+		    signature: None,
+		    conditional: None
+		};
+		Some(op)
+	    },
+	    None => None,
+	}
+    }
+    fn to_command(&self) -> Option<Command> {
+	let op = self.get_operation().expect("Op not found.");
+	let qubit_index = self.get_qubit_index();
+	let op_register = Register("q".to_string(), vec![*qubit_index as i64]);
+	let op_args = vec![op_register];
+	// Filling out the commands
+	let command = Command{op: op, args: op_args, opgroup: None};
+	return Some(command);
+	None
+    }
 }
 
 pub trait NameExtension {
