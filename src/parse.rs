@@ -429,6 +429,115 @@ mod tests {
     }
 
     #[test]
+    fn test_get_op() {
+	
+	let file_path = Path::new("example_files/SimpleGroverBaseProfile.bc");
+	let module = Module::from_bc_path(file_path).expect("File not found.");
+
+	let func_name = "Microsoft__Quantum__Samples__SimpleGrover__SearchForMarkedInput__Interop";
+	let func = module.get_func_by_name(func_name).expect("Function not found.");
+
+	let first_call = &func.basic_blocks[0].instrs[0].get_call();
+
+	let op = first_call.get_operation().expect("No op found.");
+
+	let expected_op = Operation{
+	    op_type: OpType::H,
+	    n_qb: None,
+	    params: None,
+	    op_box: None,
+	    signature: None,
+	    conditional: None
+	};
+
+	assert_eq!(op, expected_op);
+    }
+
+    #[test]
+    fn test_to_command() {
+	
+	let file_path = Path::new("example_files/SimpleGroverBaseProfile.bc");
+	let module = Module::from_bc_path(file_path).expect("File not found.");
+
+	let func_name = "Microsoft__Quantum__Samples__SimpleGrover__SearchForMarkedInput__Interop";
+	let func = module.get_func_by_name(func_name).expect("Function not found.");
+
+	let first_call = &func.basic_blocks[0].instrs[0].get_call();
+
+	let command = first_call.to_command().expect("No command found.");
+
+	println!("{:?}", command);
+
+	// Filling out the op type for simple H gate 
+	// let optype = circuit::OpType::H;
+	let op_register = circuit::Register("q".to_string(), vec![0]);
+	let op_args = vec![op_register];
+	let op = circuit::Operation{
+	    op_type: OpType::H,
+	    n_qb: None,
+	    params: None,
+	    op_box: None,
+	    signature: None,
+	    conditional: None
+	};
+
+	// Filling out the commands
+	let expected_command = circuit::Command{ op: op, args: op_args, opgroup: None };
+
+	assert_eq!(command, expected_command);
+	
+    }
+
+    #[test]
+    fn test_generate_circuit_from_instruction_list() {
+
+	let file_path = Path::new("example_files/SimpleGroverBaseProfile_2.bc");
+	let module = Module::from_bc_path(file_path).expect("File not found.");
+
+	let func_name = "Microsoft__Quantum__Samples__SimpleGrover__SearchForMarkedInput__Interop";
+	let func = module.get_func_by_name(func_name).expect("Function not found.");
+
+	let instructions = &func.basic_blocks[0].instrs;
+
+	let commands: Vec<Command> = instructions
+	    .iter()
+	    .map(|i| i.get_call().to_command().expect("Command not found."))
+	    .collect();
+
+	println!("{:?}", commands);
+
+	// A register of qubits for the circuit
+	let register0 = circuit::Register("q".to_string(), vec![0]);
+	let register1 = circuit::Register("q".to_string(), vec![1]);
+	let register2 = circuit::Register("q".to_string(), vec![2]);
+	// Filling out the qubit register while creating an empty bit register
+	let circuit_qubits = vec![register0.clone(), register1.clone(), register2.clone()];
+	let circuit_bits: Vec<circuit::Register> = vec![];
+	
+	// Defining the global phase and implicit permutation
+	let phase = "0.0".to_string();
+
+	// Two clones for the implicit permutation
+	let register3 = register0.clone();
+	let register4 = register0.clone();
+	let implicit_permutation = vec![circuit::Permutation(register3, register4)];
+
+	// Creating the circuit with all previously defined parameters
+	let circuit = circuit::Circuit{
+	    name: None,
+	    phase: phase,
+	    commands: commands,
+	    qubits: circuit_qubits,
+	    bits: circuit_bits,
+	    implicit_permutation: implicit_permutation
+	};
+
+	let circuit_json_str = serde_json::to_string(&circuit).unwrap();
+	println!("{:?}", circuit_json_str);
+	serde_json::to_writer(&File::create("./data.json").unwrap(), &circuit_json_str);
+    }
+    
+    #[test]
     fn test_generate_circuit_from_single_expression() {
 	
 	let file_path = Path::new("example_files/SimpleGroverBaseProfile.bc");
