@@ -91,6 +91,46 @@ impl FunctionExtension for llvm_ir::Function {
     }
 }
 
+pub trait BasicBlockExtension {
+    fn to_circuit(&self, nb_qubits: i64, nb_bits: i64) -> Circuit;
+}
+
+impl BasicBlockExtension for llvm_ir::BasicBlock {
+    fn to_circuit(&self, nb_qubits: i64, nb_bits: i64) -> Circuit {
+	// Classical and quantum registers for the circuit
+	let mut circuit_qubit_register: Vec<Register> = vec![];
+	let mut circuit_bit_register: Vec<Register> = vec![];
+	for qubit in 0..nb_qubits {
+	    circuit_qubit_register.push(Register("q".to_string(), vec![qubit]))
+	}
+	for bit in 0..nb_bits {
+	    circuit_bit_register.push(Register("c".to_string(), vec![bit]))
+	}
+	let commands: Vec<Command> = self.instrs
+	    .iter()
+	    .map(|i| i.get_call().to_command().expect("Command not found."))
+	    .collect();
+    
+	// Defining the global phase and implicit permutation
+	let phase = "0.0".to_string();
+
+	// Two clones for the implicit permutation
+	let register0 = Register("q".to_string(), vec![0]);
+	let implicit_permutation = vec![Permutation(register0.clone(), register0.clone())];
+
+	// Creating the circuit with all previously defined parameters
+	let circuit = Circuit{
+	    name: None,
+	    phase: phase,
+	    commands: commands,
+	    qubits: circuit_qubit_register,
+	    bits: circuit_bit_register,
+	    implicit_permutation: implicit_permutation
+	};
+	return circuit;
+    }
+} 
+
 pub trait InstructionExtension {
     fn get_call(&self) -> &llvm_ir::instruction::Call;
 }
