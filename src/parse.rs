@@ -315,12 +315,13 @@ impl CallExtension for llvm_ir::instruction::Call {
     }
     fn get_operation(&self) -> Option<Operation> {
 	let op_type = self.get_optype();
+	let params = self.get_params();
 	match op_type {
 	    Some(optype) => {
 		let op = Operation{
 		    op_type: optype,
 		    n_qb: None,
-		    params: None,
+		    params: params,
 		    op_box: None,
 		    signature: None,
 		    conditional: None
