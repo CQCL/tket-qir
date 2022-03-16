@@ -333,20 +333,35 @@ impl CallExtension for llvm_ir::instruction::Call {
     }
     fn to_command(&self) -> Option<Command> {
 	let op = self.get_operation().expect("Op not found.");
-	let qubit_index = self.get_qubit_index();
-	// let op_register = Register("q".to_string(), qubit_index);
-	// let op_args = vec![op_register];
+	// println!("op {:?}", op);
+	let qubit_indices = self.get_qubit_indices();
 
-	let op_args: Vec<Register> = qubit_index
+	let mut op_args_qubits: Vec<Register> = qubit_indices
 	    .iter()
 	    .map(|qi| Register("q".to_string(), vec![*qi]))
 	    .collect();
 
+	let bit_indices = self.get_bit_indices();
+	// println!("bi {:?}", bit_indices);
+	let mut op_args_bits: Vec<Register> = vec![];
+	
+	if bit_indices.is_some() {
+	    let bit_indices = bit_indices.unwrap();
+	    for bi in bit_indices.iter() {
+		op_args_bits.push(Register("c".to_string(), vec![*bi]));
+	    }
+	}
 
+	let mut op_args: Vec<Register> = vec![];
 
+	op_args.append(&mut op_args_qubits);
+
+	if !op_args_bits.is_empty() {
+	    op_args.append(&mut op_args_bits);
+	}
 	
 	// Filling out the commands
-	let command = Command{op: op, args: op_args, opgroup: None};
+	let command = Command{ op: op, args: op_args, opgroup: None };
 	return Some(command);
 	None
     }
