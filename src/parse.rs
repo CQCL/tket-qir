@@ -147,8 +147,10 @@ impl InstructionExtension for llvm_ir::Instruction {
 
 pub trait CallExtension {
     fn get_func_name(&self) -> Option<llvm_ir::Name>;
-    fn get_qubit_index(&self) -> Vec<i64>;
+    fn get_qubit_indices(&self) -> Vec<i64>;
+    fn get_bit_indices(&self) -> Option<Vec<i64>>;
     fn get_optype(&self) -> Option<OpType>;
+    fn get_params(&self) -> Option<Vec<String>>; 
     fn get_operation(&self) -> Option<Operation>;
     fn to_command(&self) -> Option<Command>;
 }
@@ -164,51 +166,89 @@ impl CallExtension for llvm_ir::instruction::Call {
             _ => None,
         }
     }
-    fn get_qubit_index(&self) -> Vec<i64> {
-	println!("{:?}", self.arguments);
+    fn get_qubit_indices(&self) -> Vec<i64> {
 
-	let qubit_indices: Vec<i64> = self.arguments
+	let mut qubit_indices: Vec<i64> = vec![];
+
+	self.arguments
 	    .iter()
-	    .map(|arg| match &arg.0 {
-		llvm_ir::Operand::ConstantOperand(const_op) => {
-		    match const_op.as_ref() {
-			llvm_ir::constant::Constant::IntToPtr (p) => {
-			    match p.operand.as_ref() {
-				llvm_ir::Constant::Int { bits: _, value } => *value as i64,
-				_ => 0,
-			    }
-			},
-			_ => 0,
-		    }
-		},
-		_ => 0,
-	    })
-	    .collect();
-	// println!("{:?}", qubit_indices);
+	    .for_each(|arg| if let llvm_ir::Operand::ConstantOperand(const_op) = &arg.0 {
+		 match const_op.as_ref() {
+		     llvm_ir::constant::Constant::IntToPtr (p) => {
+			 if let llvm_ir::types::Type::PointerType { pointee_type: pt , addr_space: _} = p.to_type.as_ref() {
+			     if let llvm_ir::types::Type::NamedStructType { name: name } = pt.as_ref() {
+				 if name.eq("Qubit") {
+				     let operand_ref = p.operand.as_ref();
+				     if let llvm_ir::Constant::Int { bits: _, value } = operand_ref {
+					 qubit_indices.push(*value as i64)
+				     }
+				 }				 
+			     }
+			 }
+		     },
+		     llvm_ir::constant::Constant::Null (p) => {
 
-	
-	// match self.arguments.as_slice() {
-	//     [first, ..] => {
-	// 	// println!("{:?}", first);
-	// 	match &first.0 {
-	// 	    llvm_ir::Operand::ConstantOperand(const_op) => {
-	// 		match const_op.as_ref() {
-	// 		    llvm_ir::constant::Constant::IntToPtr (p) => {
-	// 			match p.operand.as_ref() {
-	// 			    llvm_ir::Constant::Int { bits: _, value } => &value,
-	// 			    _ => &0,
-	// 			}
-	// 		    },
-	// 		    _ => &0,
-	// 		}
-	// 	    },
-	// 	    _ => &0,
-	// 	}
-	//     },
-	//     _ => unreachable!(),
-        // }
+			 if let llvm_ir::types::Type::PointerType { pointee_type: pt , addr_space: _} = p.as_ref() {
+			     if let llvm_ir::types::Type::NamedStructType { name: name } = pt.as_ref() {
+				 if name.eq("Qubit") {
+				     qubit_indices.push(0)
+				 }				 
+			     }
+			 }
+
+		     },
+		     _ => (),
+		 }
+	    });
 	return qubit_indices
     }
+
+    fn get_bit_indices(&self) -> Option<Vec<i64>> {
+	
+	let mut bit_indices: Vec<i64> = vec![];
+
+	self.arguments
+	    .iter()
+	    .for_each(|arg| if let llvm_ir::Operand::ConstantOperand(const_op) = &arg.0 {
+		// println!("const_op {:?}", const_op);
+		match const_op.as_ref() {
+		     llvm_ir::constant::Constant::IntToPtr (p) => {
+			 // println!("p {:?}", p);
+			 if let llvm_ir::types::Type::PointerType { pointee_type: pt , addr_space: _} = p.to_type.as_ref() {
+			     if let llvm_ir::types::Type::NamedStructType { name: name } = pt.as_ref() {
+				 if name.eq("Result") {
+				     let operand_ref = p.operand.as_ref();
+				     if let llvm_ir::Constant::Int { bits: _, value } = operand_ref {
+					 bit_indices.push(*value as i64)
+				     }
+
+				 }				 
+			     }
+			 }
+		     },
+		    llvm_ir::constant::Constant::Null (p) => {
+			// println!("null p {:?}", p);
+
+			if let llvm_ir::types::Type::PointerType { pointee_type: pt , addr_space: _} = p.as_ref() {
+			    // println!("pt {:?}", pt);
+			    if let llvm_ir::types::Type::NamedStructType { name: name } = pt.as_ref() {
+				if name.eq("Result") {
+				    bit_indices.push(0)
+				}				 
+			    }
+			}
+		    },
+		     _ => (),
+		 }
+	    });
+
+	if !bit_indices.is_empty() {
+	    return Some(bit_indices)
+	}
+	None
+    }
+
+    
     fn get_optype(&self) -> Option<OpType> {
 	let func_name = self.get_func_name().expect("No name found.").as_string();
 	if func_name.contains("__h__") {
@@ -238,6 +278,31 @@ impl CallExtension for llvm_ir::instruction::Call {
 	else {
 	    None
 	}
+    }
+    fn get_params(&self) -> Option<Vec<String>> {
+	
+	// println!("Args {:?}", self.arguments);
+	let mut params: Vec<String> = vec![];
+
+	self.arguments
+	    .iter()
+	    .for_each(|arg| if let llvm_ir::Operand::ConstantOperand(const_op) = &arg.0 {
+		let const_op_ref = const_op.as_ref();
+		if let llvm_ir::constant::Constant::Float (f) = const_op_ref {
+		    match f {
+			llvm_ir::constant::Float::Double(d) => {
+			    let param = *d;
+			    params.push(param.to_string());
+			},
+			_ => ()
+		    }
+		}
+	    });
+
+	if !params.is_empty() {
+	    return Some(params)
+	}
+	None
     }
     fn get_operation(&self) -> Option<Operation> {
 	let op_type = self.get_optype();
