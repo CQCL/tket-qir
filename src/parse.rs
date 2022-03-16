@@ -11,7 +11,7 @@ use llvm_ir::operand::Operand;
 
 use either::Either;
 
-use crate::circuit::{OpType, Operation, Circuit, Command, Register};
+use crate::circuit::{OpType, Operation, Circuit, Command, Register, Permutation};
 
 
 pub trait ModuleExtension {
