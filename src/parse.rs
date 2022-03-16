@@ -501,24 +501,13 @@ mod tests {
 
 	let first_instruction = func.get_instr_by_name(first_instruction_name).expect("Instruction not found.");
 	
-	println!("{:?}", first_instruction);
-	match first_instruction {
-	    llvm_ir::Instruction::Call(call) => {
-		match call.get_func_name() {
-		    Some(func_name) => {
-			assert_eq!(func_name.as_string(), first_instruction_name.to_string())
-		    },
-		    _ => (),
-		}
-		
-		// assert_eq!(call.get_in_name().expect("Call not found").as_string(), func_name);
-	    },
-	    _ => (),
-	}
+	let first_call = first_instruction.get_call();
+
+	assert_eq!(first_call.get_func_name().unwrap().as_string(), first_instruction_name);
     }
 
     #[test]
-    fn test_get_qubit_index() {
+    fn test_get_qubit_indices() {
 	
 	let file_path = Path::new("example_files/SimpleGroverBaseProfile.bc");
 	let module = Module::from_bc_path(file_path).expect("File not found.");
@@ -530,29 +519,23 @@ mod tests {
 
 	let first_instruction = func.get_instr_by_name(first_instruction_name).expect("Instruction not found.");
 
-	match first_instruction {
-	    llvm_ir::Instruction::Call(call) => {
-		let index = call.get_qubit_index();
-		assert_eq!(index, vec![0])
-	    },
-	    _ => (),
-	}
+	let qubit_indices1 = first_instruction.get_call().get_qubit_indices();
+	assert_eq!(qubit_indices1, vec![0]);
 
+	
 	let second_instruction_name = "__quantum__qis__x__body";
 	let second_instruction = func.get_instr_by_name(second_instruction_name).expect("Instruction not found.");
 
-	match second_instruction {
-	    llvm_ir::Instruction::Call(call) => {
-		let index = call.get_qubit_index();
-		assert_eq!(index, vec![2]);
-	    },
-	    _ => (),
-	}
-
+	let qubit_indices2 = second_instruction.get_call().get_qubit_indices();
+	assert_eq!(qubit_indices2, vec![2]);
+	
+	
 	let third_instruction_name = "__quantum__qis__cnot__body";
 	let third_instruction_call = func.get_instr_by_name(third_instruction_name).expect("Instruction not found.").get_call();
 
-	println!("{:?}", third_instruction_call.get_qubit_index())
+
+	let index = third_instruction_call.get_qubit_indices();
+	assert_eq!(index, vec![2, 0]);
 	
     }
 
@@ -567,22 +550,28 @@ mod tests {
 
 	let first_instruction = &func.basic_blocks[0].instrs[0];
 
-	// println!("{:?}", first_instruction);
+	let optype = first_instruction.get_call().get_optype().unwrap();
 
-	match first_instruction {
-	    llvm_ir::Instruction::Call(call) => {
-		match call.get_optype() {
-		    Some(optype) => {
-			assert_eq!(optype, OpType::H)
-		    },
-		    _ => (),
-		}
-		
-		// assert_eq!(call.get_in_name().expect("Call not found").as_string(), func_name);
-	    },
-	    _ => (),
-	}	
+	assert_eq!(optype, OpType::H);
 
+    }
+    
+    #[test]
+    fn test_get_params() {
+
+	let file_path = Path::new("example_files/SimpleBaseProfile_ParametrisedGates.bc");
+	let module = Module::from_bc_path(file_path).expect("File not found.");
+
+	let func_name = "Microsoft__Quantum__Samples__SimpleGrover__SearchForMarkedInput__Interop";
+	let func = module.get_func_by_name(func_name).expect("Function not found.");
+
+	let func_call = func.basic_blocks[0].instrs[0].get_call();
+
+	assert_eq!(func_call.get_qubit_indices(), vec![0]);
+
+	let params = func_call.get_params().expect("No params found.");
+	
+	assert_eq!(params, vec!["-5.497787143782138".to_string()]);
     }
 
     #[test]
@@ -646,52 +635,55 @@ mod tests {
     }
 
     #[test]
-    fn test_generate_circuit_from_instruction_list() {
+    fn test_generate_circuit_from_Grover_example() {
 
-	let file_path = Path::new("example_files/SimpleGroverBaseProfile_2.bc");
+	let file_path = Path::new("example_files/SimpleGroverBaseProfile.bc");
 	let module = Module::from_bc_path(file_path).expect("File not found.");
 
 	let func_name = "Microsoft__Quantum__Samples__SimpleGrover__SearchForMarkedInput__Interop";
 	let func = module.get_func_by_name(func_name).expect("Function not found.");
 
-	let instructions = &func.basic_blocks[0].instrs;
-
-	let commands: Vec<Command> = instructions
-	    .iter()
-	    .map(|i| i.get_call().to_command().expect("Command not found."))
-	    .collect();
-
-	println!("{:?}", commands);
-
-	// A register of qubits for the circuit
-	let register0 = circuit::Register("q".to_string(), vec![0]);
-	let register1 = circuit::Register("q".to_string(), vec![1]);
-	let register2 = circuit::Register("q".to_string(), vec![2]);
-	// Filling out the qubit register while creating an empty bit register
-	let circuit_qubits = vec![register0.clone(), register1.clone(), register2.clone()];
-	let circuit_bits: Vec<circuit::Register> = vec![];
+	let nb_qubits = func.get_nb_qubits();
+	let nb_bits = func.get_nb_bits();
 	
-	// Defining the global phase and implicit permutation
-	let phase = "0.0".to_string();
+	let circuit = func.basic_blocks[0].to_circuit(nb_qubits, nb_bits);
 
-	// Two clones for the implicit permutation
-	let register3 = register0.clone();
-	let register4 = register0.clone();
-	let implicit_permutation = vec![circuit::Permutation(register3, register4)];
+	// let commands: Vec<Command> = instructions
+	//     .iter()
+	//     .map(|i| i.get_call().to_command().expect("Command not found."))
+	//     .collect();
 
-	// Creating the circuit with all previously defined parameters
-	let circuit = circuit::Circuit{
-	    name: None,
-	    phase: phase,
-	    commands: commands,
-	    qubits: circuit_qubits,
-	    bits: circuit_bits,
-	    implicit_permutation: implicit_permutation
-	};
+	// println!("{:?}", commands);
+
+	// // A register of qubits for the circuit
+	// let register0 = circuit::Register("q".to_string(), vec![0]);
+	// let register1 = circuit::Register("q".to_string(), vec![1]);
+	// let register2 = circuit::Register("q".to_string(), vec![2]);
+	// // Filling out the qubit register while creating an empty bit register
+	// let circuit_qubits = vec![register0.clone(), register1.clone(), register2.clone()];
+	// let circuit_bits: Vec<circuit::Register> = vec![];
+	
+	// // Defining the global phase and implicit permutation
+	// let phase = "0.0".to_string();
+
+	// // Two clones for the implicit permutation
+	// let register3 = register0.clone();
+	// let register4 = register0.clone();
+	// let implicit_permutation = vec![circuit::Permutation(register3, register4)];
+
+	// // Creating the circuit with all previously defined parameters
+	// let circuit = circuit::Circuit{
+	//     name: None,
+	//     phase: phase,
+	//     commands: commands,
+	//     qubits: circuit_qubits,
+	//     bits: circuit_bits,
+	//     implicit_permutation: implicit_permutation
+	// };
 
 	let circuit_json_str = serde_json::to_string(&circuit).unwrap();
 	println!("{:?}", circuit_json_str);
-	serde_json::to_writer(&File::create("./data.json").unwrap(), &circuit_json_str);
+	serde_json::to_writer(&File::create("./grover.json").unwrap(), &circuit_json_str);
     }
     
     #[test]
@@ -713,7 +705,7 @@ mod tests {
 	let call_inst = first_instruction.get_call();
 
 	let optype = call_inst.get_optype().expect("Optype not found.");
-	let qubit_index = call_inst.get_qubit_index();
+	let qubit_index = call_inst.get_qubit_indices();
 	
 	// match first_instruction {
 	//     llvm_ir::Instruction::Call(call) => call_instr = call,
@@ -781,6 +773,83 @@ mod tests {
 	let pytket_circuit_str: String = serde_json::to_string(&pytket_circuit).unwrap();
 
 	assert_eq!(circuit_json_str, pytket_circuit_str);
+    }
+
+    #[test]
+    fn test_parametrised_gates() {
+	
+	let file_path = Path::new("example_files/SimpleBaseProfile_ParametrisedGates.bc");
+	let module = Module::from_bc_path(file_path).expect("File not found.");
+
+	let func_name = "SimpleBaseProfile_Parametrised_and_Measurement_Gates";
+	let func = module.get_func_by_name(func_name).expect("Function not found.");
+
+	let nb_qubits = func.get_nb_qubits(); 
+	let nb_bits = func.get_nb_bits();
+	
+	let c = func.basic_blocks[0].to_circuit(nb_qubits, nb_bits);
+
+	let c_str = serde_json::to_string(&c).unwrap();
+
+	// serde_json::to_writer(&File::create("./parametrised_circuit.json").unwrap(), &c_str);
+
+	
+	// let instructions = &func.basic_blocks[0].instrs;
+
+	// println!("{:?}", instructions[0].get_call().get_params());
+	// println!("{:?}", instructions[0].get_call().get_qubit_indices());
+
+	// // let op = instructions[0].get_call().get_operation();
+
+	// // println!("{:?}", op)
+
+	// let commands: Vec<Command> = instructions
+	//     .iter()
+	//     .map(|i| i.get_call().to_command().expect("Command not found."))
+	//     .collect();
+
+	// println!("{:?}", commands);
+
+	// // A register of qubits for the circuit
+	// let mut circuit_qubit_register: Vec<circuit::Register> = vec![];
+	// let mut circuit_bit_register: Vec<circuit::Register> = vec![];
+	// for qubit in 0..nb_qubits {
+	//     circuit_qubit_register.push(circuit::Register("q".to_string(), vec![qubit]))
+	// }
+	// for bit in 0..nb_bits {
+	//     circuit_bit_register.push(circuit::Register("c".to_string(), vec![bit]))
+	// }
+	
+	// let register0 = circuit::Register("q".to_string(), vec![0]);
+	// // let register1 = circuit::Register("q".to_string(), vec![1]);
+	// // let register2 = circuit::Register("q".to_string(), vec![2]);
+	// // Filling out the qubit register while creating an empty bit register
+	// // let circuit_qubits = vec![register0.clone(), register1.clone(), register2.clone()];
+	// // let circuit_bits: Vec<circuit::Register> = vec![];
+	
+	// // Defining the global phase and implicit permutation
+	// let phase = "0.0".to_string();
+
+	// // Two clones for the implicit permutation
+	// // let register3 = register0.clone();
+	// // let register4 = register0.clone();
+	// let implicit_permutation = vec![circuit::Permutation(register0.clone(), register0.clone())];
+
+	// // Creating the circuit with all previously defined parameters
+	// let circuit = circuit::Circuit{
+	//     name: None,
+	//     phase: phase,
+	//     commands: commands,
+	//     qubits: circuit_qubit_register,
+	//     bits: circuit_bit_register,
+	//     implicit_permutation: implicit_permutation
+	// };
+
+	// let circuit_json_str = serde_json::to_string(&circuit).unwrap();
+
+	// println!("{:?}", circuit_json_str);
+
+	// assert_eq!(c_str, circuit_json_str);
     }
     
     
