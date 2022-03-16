@@ -60,18 +60,7 @@ impl FunctionExtension for llvm_ir::Function {
 
     fn get_instr_by_name(&self, name: &str) -> Option<&llvm_ir::Instruction> {
 	for block in &self.basic_blocks {
-	    // println!("{:?}", block);
 	    for instr in &block.instrs {
-		// println!("{:?}", instr);
-		// match instr.try_get_result() {
-		//     Some(idestname) => {
-		// 	println!("idestname {:?}", idestname);
-		// 	if idestname.to_string().eq(&name.to_string()) {
-		// 	    return Some(instr)
-		// 	} 
-		//     }
-		//     None => continue
-		// }
 		match instr {
 		    llvm_ir::Instruction::Call(call) => {
 			match call.get_func_name() {
@@ -82,18 +71,6 @@ impl FunctionExtension for llvm_ir::Function {
 			    },
 			    None => continue,
 			}
-			// println!("There is a match {:?}", call.function);
-			// match &call.dest {
-			//     Some(idestname) => {
-			// 	println!("idestname {:?}", idestname);
-			// 	if idestname.to_string().eq(&name.to_string()) {
-			// 	    println!("Got it !");
-			// 	   return Some(instr); 
-			// 	}
-			//     },
-			//     None => continue
-
-			// }
 		    },
 		    _ => continue,
 		}
