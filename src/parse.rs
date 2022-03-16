@@ -272,6 +272,15 @@ impl CallExtension for llvm_ir::instruction::Call {
 	else if func_name.contains("__cnot__") {
 	    Some(OpType::CX)
 	}
+	else if func_name.contains("__rx__") {
+	    Some(OpType::Rx)
+	}
+	else if func_name.contains("__ry__") {
+	    Some(OpType::Ry)
+	}
+	else if func_name.contains("__rz__") {
+	    Some(OpType::Rz)
+	}
 	else if func_name.contains("__mz__") {
 	    Some(OpType::Measure)
 	}
