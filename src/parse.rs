@@ -39,6 +39,8 @@ impl ModuleExtension for llvm_ir::Module {
 pub trait FunctionExtension {
     fn get_attr_by_name(&self, name: &str) -> Option<String>;
     fn get_instr_by_name(&self, name: &str) -> Option<&llvm_ir::Instruction>;
+    fn get_nb_qubits(&self) -> i64;
+    fn get_nb_bits(&self) -> i64;
 }
 
 impl FunctionExtension for llvm_ir::Function {
@@ -99,7 +101,17 @@ impl FunctionExtension for llvm_ir::Function {
 	}
 	None
     }
-    
+
+    fn get_nb_qubits(&self) -> i64 {
+	self.get_attr_by_name("requiredQubits").expect("No qubits found.").parse::<i64>().unwrap()
+    }
+    fn get_nb_bits(&self) -> i64 {
+	if let Some(bits) = self.get_attr_by_name("requiredResults") {
+	    bits.parse::<i64>().unwrap()
+	} else {
+	    0
+	}
+    }
 }
 
 pub trait InstructionExtension {
