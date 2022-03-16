@@ -151,6 +151,9 @@ pub enum OpType {
     T,
     Tdg,
     CX,
+    Rx,
+    Ry,
+    Rz,
     Measure,
 }
 
