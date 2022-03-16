@@ -48,8 +48,8 @@ impl FunctionExtension for llvm_ir::Function {
 	for attr in &self.function_attributes {
 	    match attr {
 		llvm_ir::function::FunctionAttribute::StringAttribute { kind, value } => {
-                    if kind.to_string().eq(name) {
-                        Some(value.to_string());
+                    if kind.eq(name) {
+                        return Some(value.to_string());
                     }
                 },
                 _ => continue,
