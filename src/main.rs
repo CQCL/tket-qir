@@ -2,6 +2,7 @@
 // mod basic_values;
 mod circuit;
 mod generate;
+mod parse;
 // mod emit;
 use qirlib::generation::emit::ir;
 // use pyqir_generator::emitemit::{get_ir_string, write_circ_to_file};

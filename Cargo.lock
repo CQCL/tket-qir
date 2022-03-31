@@ -134,6 +134,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "llvm-ir"
+version = "0.8.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7f292d36cc01be049372faa8e5fb4aaa261d4875f7d5cdc59a86353434b7ed02"
+dependencies = [
+ "either",
+ "llvm-sys",
+ "log",
+]
+
+[[package]]
 name = "llvm-sys"
 version = "110.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -371,9 +382,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.78"
+version = "1.0.79"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d23c1ba4cf0efd44be32017709280b32d1cea5c3f1275c3b6d9e8bc54f758085"
+checksum = "8e8d9fa5c3b304765ce1fd9c4c8a3de2c8db365a5b91be52f186efc675681d95"
 dependencies = [
  "itoa",
  "ryu",
@@ -407,7 +418,9 @@ checksum = "55937e1799185b12863d447f42597ed69d9928686b8d88a1df17376a097d8369"
 name = "tket-qir"
 version = "0.1.0"
 dependencies = [
+ "either",
  "inkwell",
+ "llvm-ir",
  "qirlib",
  "serde",
  "serde_json",
